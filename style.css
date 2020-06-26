@@ -21,6 +21,16 @@
   text-align: center;
 }
 
+#locationField {
+        -webkit-box-flex: 1 1 190px;
+        -ms-flex: 1 1 190px;
+        flex: 1 1 190px;
+        margin: 0 8px;
+      }
+#category-select {
+    display: inline-block;
+    width: 100px;
+}
 /*--------------------------------------Special paddigns/Margings/Text */
 
 .section-core {
@@ -75,6 +85,13 @@ footer {
   overflow: hidden;
 }
 div#map {min-height: 360px;}
+
+#locationField {
+        -webkit-box-flex: 1 1 190px;
+        -ms-flex: 1 1 190px;
+        flex: 1 1 190px;
+        margin: 0 8px;
+      }
 
 #panel {
       height: 520px;
