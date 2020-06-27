@@ -15,6 +15,10 @@ var countries = {
     center: { lat: -25.3, lng: 133.8 },
     zoom: 4,
   },
+  ar: {
+    center: { lat: -38.41, lng: -63.61 },
+    zoom: 4,
+  },
   br: {
     center: { lat: -14.2, lng: -51.9 },
     zoom: 3,
@@ -22,6 +26,10 @@ var countries = {
   ca: {
     center: { lat: 62, lng: -110.0 },
     zoom: 3,
+  },
+  irl: {
+    center: { lat: 53.14, lng: -7.69 },
+    zoom: 6,
   },
   fr: {
     center: { lat: 46.2, lng: 2.2 },
@@ -73,7 +81,6 @@ function initMap() {
   infoWindow = new google.maps.InfoWindow({
     content: document.getElementById("info-content"),
   });
-  const categorySelect = document.getElementById("category-select");
 
   // Create the autocomplete object and associate it with the UI input control.
   // Restrict the search to the default country, and to place type "cities".
@@ -87,8 +94,6 @@ function initMap() {
 
   places = new google.maps.places.PlacesService(map);
 
-  
-
   autocomplete.addListener("place_changed", onPlaceChanged);
 
   //Add a dom event listener to react when a user selects a country
@@ -96,25 +101,60 @@ function initMap() {
     .getElementById("country")
     .addEventListener("change", setAutocompleteCountry);
 }
-$("#category-select").change(onPlaceChanged);
+
+// When the user selects a city, get the place details for the city and
+// zoom the map in on the city.
 function onPlaceChanged() {
   search_for = $("#category-select").children("option:selected").val();
   var place = autocomplete.getPlace();
-  if (place) {
-    if (place.geometry) {
-      map.panTo(place.geometry.location);
-      map.setZoom(16);
-    }
+
+  if (place.geometry) {
+    map.panTo(place.geometry.location);
+    map.setZoom(16);
   }
 
-  //Select Hospital/Pharmacy
+  // added Codition for Hospital/Pharmacies selected
   if (search_for == "hospital") {
-    searchPlaces(["hospital"]);
+    selectItems(["hospital"]);
   } else if (search_for == "pharmacy") {
-    searchPlaces(["pharmacy"]);
+    selectItems(["pharmacy"]);
   } else {
     document.getElementById("autocomplete").placeholder = "Enter a city";
   }
+}
+
+// Search for hospital/pharmacies in the selected city, within the viewport of the map.
+
+function selectItems(types) {
+  var search = {
+    bounds: map.getBounds(),
+    types: types,
+  };
+  places.nearbySearch(search, function (results, status) {
+    console.log(results, status);
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+      clearResults();
+      clearMarkers();
+      // Create a marker for each element found, and
+      // assign a letter of the alphabetic to each marker icon.
+      for (var i = 0; i < results.length; i++) {
+        var markerLetter = String.fromCharCode("A".charCodeAt(0) + (i % 26));
+        var markerIcon = MARKER_PATH + markerLetter + ".png";
+        // Use marker animation to drop the icons incrementally on the map.
+        markers[i] = new google.maps.Marker({
+          position: results[i].geometry.location,
+          animation: google.maps.Animation.DROP,
+          icon: markerIcon,
+        });
+        // If the user clicks the hospital/pharmacy marker, show the details of that element
+        // in an info window.
+        markers[i].placeResult = results[i];
+        google.maps.event.addListener(markers[i], "click", showInfoWindow);
+        setTimeout(dropMarker(i), i * 100);
+        addResult(results[i], i);
+      }
+    }
+  });
 }
 
 function clearMarkers() {
@@ -181,7 +221,7 @@ function clearResults() {
   }
 }
 
-// Get the place details for a hotel. Show the information in an info window,
+// Get the place details for a hospital/pharmacies. Show the information in an info window,
 // anchored on the marker for the hotel that the user selected.
 
 function showInfoWindow() {
@@ -218,18 +258,18 @@ function buildIWContent(place) {
   // to indicate the rating the element has earned, and a white star ('&#10025;')
   // for the rating points not achieved.
   if (place.rating) {
-   var ratingHtml = "";
-   for (var i = 0; i < 5; i++) {
-     if (place.rating < i + 0.5) {
-       ratingHtml += "&#10025;";
-     } else {
-       ratingHtml += "&#10029;";
+    var ratingHtml = "";
+    for (var i = 0; i < 5; i++) {
+      if (place.rating < i + 0.5) {
+        ratingHtml += "&#10025;";
+      } else {
+        ratingHtml += "&#10029;";
+      }
+      document.getElementById("iw-rating-row").style.display = "";
+      document.getElementById("iw-rating").innerHTML = ratingHtml;
     }
-     document.getElementById("iw-rating-row").style.display = "";
-     document.getElementById("iw-rating").innerHTML = ratingHtml;
-  }
- } else {
-   document.getElementById("iw-rating-row").style.display = "none";
+  } else {
+    document.getElementById("iw-rating-row").style.display = "none";
   }
 
   // The regexp isolates the first part of the URL (domain plus subdomain)
@@ -246,38 +286,4 @@ function buildIWContent(place) {
   } else {
     document.getElementById("iw-website-row").style.display = "none";
   }
-}
-
-function searchPlaces(types) {
-  var search = {
-    location: { lat: 48.8566, lng: 2.3522 },
-    radius: 5000,
-    bounds: map.getBounds(),
-    types: types,
-  };
-  places.nearbySearch(search, function (results, status) {
-    console.log(results, status);
-    if (status === google.maps.places.PlacesServiceStatus.OK) {
-      clearResults();
-      clearMarkers();
-      // Create a marker for each element found, and
-      // assign a letter of the alphabetic to each marker icon.
-      for (var i = 0; i < results.length; i++) {
-        var markerLetter = String.fromCharCode("A".charCodeAt(0) + (i % 26));
-        var markerIcon = MARKER_PATH + markerLetter + ".png";
-        // Use marker animation to drop the icons incrementally on the map.
-        markers[i] = new google.maps.Marker({
-          position: results[i].geometry.location,
-          animation: google.maps.Animation.DROP,
-          icon: markerIcon,
-        });
-        // If the user clicks the element marker, show the details of that element
-        // in an info window.
-        markers[i].placeResult = results[i];
-        google.maps.event.addListener(markers[i], "click", showInfoWindow);
-        setTimeout(dropMarker(i), i * 100);
-        addResult(results[i], i);
-      }
-    }
-  });
 }
